@@ -21,8 +21,6 @@ An example `PKGBUILD` is provided. To build and install:
 makepkg -si
 ```
 
-When publishing to the AUR, replace `OWNER` in the `source` URL with your GitHub username.
-
 ### From source
 
 Run the script directly or install into `~/.local/bin`:
