@@ -32,6 +32,11 @@ unique=0
 list_outputs_only=0
 gui=0
 
+backend="x11"
+if command -v swaymsg >/dev/null 2>&1 && [[ -n "${WAYLAND_DISPLAY:-}" ]]; then
+    backend="sway"
+fi
+
 declare -A map
 declare -a dirs
 declare -a passthru
@@ -43,6 +48,17 @@ feh_flag() {
         center) echo --bg-center;;
         tile) echo --bg-tile;;
         max) echo --bg-max;;
+        *) die "Unknown style: $1";;
+    esac
+}
+
+sway_mode() {
+    case "$1" in
+        fill) echo fill;;
+        scale) echo stretch;;
+        center) echo center;;
+        tile) echo tile;;
+        max) echo fit;;
         *) die "Unknown style: $1";;
     esac
 }
@@ -66,12 +82,23 @@ pick_random() {
     echo "${arr[RANDOM%${#arr[@]}]}"
 }
 
-outputs() { xrandr --listmonitors | awk 'NR>1{print $NF}' || true; }
+outputs() {
+    if [[ $backend == sway ]]; then
+        swaymsg -t get_outputs | jq -r '.[] | select(.active) | .name' || true
+    else
+        xrandr --listmonitors | awk 'NR>1{print $NF}' || true
+    fi
+}
 
 ensure_deps() {
-    command -v "$feh_bin" >/dev/null 2>&1 || die "feh not found"
-    command -v xrandr >/dev/null 2>&1 || die "xrandr not found"
-    if ((watch)) && ((interval==0)); then command -v xev >/dev/null 2>&1 || die "xev not found"; fi
+    if [[ $backend == sway ]]; then
+        command -v swaymsg >/dev/null 2>&1 || die "swaymsg not found"
+        command -v jq >/dev/null 2>&1 || die "jq not found"
+    else
+        command -v "$feh_bin" >/dev/null 2>&1 || die "feh not found"
+        command -v xrandr >/dev/null 2>&1 || die "xrandr not found"
+        if ((watch)) && ((interval==0)); then command -v xev >/dev/null 2>&1 || die "xev not found"; fi
+    fi
 }
 
 apply_once() {
@@ -120,8 +147,20 @@ apply_once() {
         imgs+=("$sel"); used+=("$sel")
         ((verbose)) && log "[$out] $sel"
     done
-    cmd=("$feh_bin" --no-fehbg "$(feh_flag "$style")" "${passthru[@]:-}" "${imgs[@]}")
-    if ((dry)); then printf 'dry-run: '; printf '%q ' "${cmd[@]}"; echo; else "${cmd[@]}"; fi
+    if [[ $backend == sway ]]; then
+        for i in "${!outs[@]}"; do
+            out="${outs[$i]}"
+            img="${imgs[$i]}"
+            if ((dry)); then
+                printf 'dry-run: swaymsg output %q bg %q %q\n' "$out" "$img" "$(sway_mode "$style")"
+            else
+                swaymsg output "$out" bg "$img" "$(sway_mode "$style")" >/dev/null
+            fi
+        done
+    else
+        cmd=("$feh_bin" --no-fehbg "$(feh_flag "$style")" "${passthru[@]:-}" "${imgs[@]}")
+        if ((dry)); then printf 'dry-run: '; printf '%q ' "${cmd[@]}"; echo; else "${cmd[@]}"; fi
+    fi
 }
 
 watch_loop() {
@@ -129,7 +168,11 @@ watch_loop() {
     if ((interval>0)); then
         while true; do sleep "$interval"; apply_once; done
     else
-        xev -root -event randr | while IFS= read -r _; do apply_once; done
+        if [[ $backend == sway ]]; then
+            swaymsg -m -t subscribe '["output"]' | while read -r _; do apply_once; done
+        else
+            xev -root -event randr | while IFS= read -r _; do apply_once; done
+        fi
     fi
 }
 
