@@ -1,5 +1,5 @@
 pkgname=muralis
-pkgver=0.5.0
+pkgver=1.0.0
 pkgrel=1
 pkgdesc="Minimal wallpaper shuffler for X11 and Sway"
 arch=('any')
