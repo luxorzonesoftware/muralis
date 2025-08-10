@@ -1,0 +1,22 @@
+pkgbase = muralis
+pkgdesc = Minimal wallpaper shuffler for X11 and Sway
+pkgver = 0.5.0
+pkgrel = 1
+url = https://github.com/OWNER/muralis
+arch = any
+license = GPL2
+depends = bash
+depends = coreutils
+depends = findutils
+optdepends = feh: wallpaper setting on X11
+optdepends = xorg-xrandr: monitor detection on X11
+optdepends = xorg-xev: watch mode on X11
+optdepends = sway: Wayland compositor support
+optdepends = jq: JSON parsing for sway backend
+optdepends = dialog: terminal GUI
+optdepends = whiptail: terminal GUI
+optdepends = fzf: fuzzy finder GUI
+source = https://github.com/OWNER/muralis/archive/refs/tags/v0.5.0.tar.gz
+sha256sums = SKIP
+
+pkgname = muralis

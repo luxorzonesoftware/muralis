@@ -1,0 +1,11 @@
+# Ignore build artifacts
+src/
+pkg/
+*.tar.*
+*.pkg.tar.*
+
+*.log
+
+# Editor backups
+*~
+*.swp
