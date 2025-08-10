@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-version="0.5.0"
+version="1.0.0"
 
 install_self() {
     target_dir="$HOME/.local/bin"
